@@ -7,7 +7,7 @@ import java.util.TimerTask;
 
 
 
-public abstract class Monster {
+public abstract class Monster implements DatabaseManagement{
   public String name;
   public int personId;
   public int id;
@@ -157,5 +157,15 @@ public abstract class Monster {
       }
     };
     this.timer.schedule(timerTask, 0, 600);
+  }
+
+  @Override
+  public void delete() {
+    try(Connection con = DB.sql2o.open()) {
+    String sql = "DELETE FROM monsters WHERE id = :id;";
+    con.createQuery(sql)
+      .addParameter("id", this.id)
+      .executeUpdate();
+    }
   }
 }

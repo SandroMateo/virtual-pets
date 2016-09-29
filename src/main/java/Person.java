@@ -2,7 +2,7 @@ import org.sql2o.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Person {
+public class Person implements DatabaseManagement{
   private String name;
   private String email;
   private int id;
@@ -35,6 +35,7 @@ public class Person {
     }
   }
 
+  @Override
   public void save() {
     try(Connection con = DB.sql2o.open()) {
       String sql = "INSERT INTO persons (name, email) VALUES (:name, :email)";
@@ -85,23 +86,11 @@ public class Person {
       return allMonsters;
   }
 
+//refractor to join statements
   public List<Community> getCommunities() {
     try(Connection con = DB.sql2o.open()){
-      String joinQuery = "SELECT community_id FROM communities_persons WHERE person_id = :person_id";
-      List<Integer> communityIds = con.createQuery(joinQuery)
-        .addParameter("person_id", this.getId())
-        .executeAndFetch(Integer.class);
-
-      List<Community> communities = new ArrayList<Community>();
-
-      for (Integer communityId : communityIds) {
-        String communityQuery = "SELECT * FROM communities WHERE id = :communityId";
-        Community community = con.createQuery(communityQuery)
-          .addParameter("communityId", communityId)
-          .executeAndFetchFirst(Community.class);
-        communities.add(community);
-      }
-      return communities;
+      String sql = "SELECT communities.* FROM persons JOIN communities_persons ON (persons.id = communities_persons.person_id) JOIN communities ON (communities_persons.community_id = communities.id) WHERE person_id = :id";
+      return con.createQuery(sql).addParameter("id", this.id).executeAndFetch(Community.class);
     }
   }
 
@@ -112,6 +101,16 @@ public class Person {
         .addParameter("communityId", community.getId())
         .addParameter("personId", this.getId())
         .executeUpdate();
+    }
+  }
+
+  @Override
+  public void delete(){
+    try(Connection con = DB.sql2o.open()){
+      String sql = "DELETE FROM persons WHERE id = :id";
+      con.createQuery(sql).addParameter("id",this.id).executeUpdate();
+      String joinDeleteQuery = "DELETE FROM communities_persons WHERE person_id = :personId";
+      con.createQuery(joinDeleteQuery).addParameter("personId",this.getId()).executeUpdate();
     }
   }
 

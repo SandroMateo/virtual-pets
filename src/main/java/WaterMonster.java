@@ -5,7 +5,7 @@ import java.sql.Timestamp;
 
 
 
-public class WaterMonster extends Monster {
+public class WaterMonster extends Monster implements DatabaseManagement{
   private int waterLevel;
   public Timestamp lastWater;
   public static final int MAX_WATER_LEVEL = 8;

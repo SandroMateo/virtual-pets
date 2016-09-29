@@ -2,7 +2,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.sql2o.*;
 
-public class Community {
+public class Community implements DatabaseManagement{
   private String name;
   private String description;
   private int id;
@@ -33,6 +33,7 @@ public class Community {
     }
   }
 
+  @Override
   public void save(){
     try(Connection con = DB.sql2o.open()){
       String sql = "INSERT INTO communities (name, description) VALUES (:name, :description)";
@@ -56,24 +57,12 @@ public class Community {
 
   public List<Person> getPersons() {
     try(Connection con = DB.sql2o.open()) {
-      String joinQuery = "SELECT person_id FROM communities_persons WHERE community_id = :community_id";
-      List<Integer> personIds = con.createQuery(joinQuery)
-        .addParameter("community_id", this.getId())
-        .executeAndFetch(Integer.class);
-
-      List<Person> persons = new ArrayList<Person>();
-
-      for(Integer personId : personIds) {
-        String personQuery = "SELECT * FROM persons WHERE id = :personId";
-        Person person = con.createQuery(personQuery)
-          .addParameter("personId", personId)
-          .executeAndFetchFirst(Person.class);
-        persons.add(person);
-      }
-      return persons;
+      String sql = "SELECT persons.* FROM communities JOIN communities_persons ON (communities.id = communities_persons.community_id) JOIN persons ON (communities_persons.person_id = persons.id) WHERE communities.id = :id";
+      return con.createQuery(sql).addParameter("id", this.id).executeAndFetch(Person.class);
     }
   }
 
+  @Override
   public void delete() {
     try(Connection con = DB.sql2o.open()) {
     String sql = "DELETE FROM communities WHERE id = :id;";
@@ -96,4 +85,6 @@ public class Community {
         .executeUpdate();
     }
   }
+
+
 }
